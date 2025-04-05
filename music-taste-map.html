@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Music Taste Graph</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #eee;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      flex-direction: column;
+    }
+    .graph {
+      position: relative;
+      width: 600px;
+      height: 600px;
+      border: 2px solid #eee;
+    }
+    .axis-label {
+      position: absolute;
+      font-size: 14px;
+      opacity: 0.7;
+    }
+    .x-left { left: 0; top: 50%; transform: translateY(-50%); }
+    .x-right { right: 0; top: 50%; transform: translateY(-50%); }
+    .y-top { top: 0; left: 50%; transform: translateX(-50%); }
+    .y-bottom { bottom: 0; left: 50%; transform: translateX(-50%); }
+    .dot {
+      position: absolute;
+      padding: 4px 6px;
+      border-radius: 5px;
+      background-color: #00aaff;
+      font-size: 12px;
+      white-space: nowrap;
+      cursor: grab;
+    }
+    .add-container {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+    }
+    .input-field {
+      padding: 10px;
+      font-size: 14px;
+      margin-right: 10px;
+      border-radius: 5px;
+    }
+    .add-button {
+      padding: 10px 20px;
+      background-color: #00aaff;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="graph" id="graph">
+    <!-- Axis Labels -->
+    <div class="axis-label x-left">Darker / Emotional / Heavy</div>
+    <div class="axis-label x-right">Lighter / Upbeat / Bright</div>
+    <div class="axis-label y-top">Simpler (musically)</div>
+    <div class="axis-label y-bottom">More Complex (musically)</div>
+  </div>
+
+  <div class="add-container">
+    <input type="text" id="artist-input" class="input-field" placeholder="Enter artist name" />
+    <button class="add-button" id="add-artist">Add Artist</button>
+  </div>
+
+  <script>
+    const graph = document.getElementById('graph');
+    const addButton = document.getElementById('add-artist');
+    const artistInput = document.getElementById('artist-input');
+
+    // Load saved positions
+    window.addEventListener('load', () => {
+      const dots = document.querySelectorAll('.dot');
+      dots.forEach(dot => {
+        const name = dot.dataset.name;
+        const saved = JSON.parse(localStorage.getItem(name));
+        if (saved) {
+          dot.style.left = saved.left;
+          dot.style.top = saved.top;
+        }
+      });
+    });
+
+    addButton.addEventListener('click', () => {
+      const name = artistInput.value.trim();
+      if (!name) return;
+
+      const newDot = document.createElement('div');
+      newDot.classList.add('dot');
+      newDot.textContent = name;
+      newDot.dataset.name = name;
+
+      // Random position logic
+      const randomX = Math.floor(Math.random() * 90) + 5; // Random between 5% and 95%
+      const randomY = Math.floor(Math.random() * 90) + 5; // Random between 5% and 95%
+
+      newDot.style.left = `${randomX}%`;
+      newDot.style.top = `${randomY}%`;
+
+      graph.appendChild(newDot);
+
+      // Dragging functionality
+      let isDragging = false;
+      let offsetX, offsetY;
+
+      newDot.addEventListener('mousedown', e => {
+        isDragging = true;
+        offsetX = e.offsetX;
+        offsetY = e.offsetY;
+        newDot.style.cursor = 'grabbing';
+      });
+
+      document.addEventListener('mousemove', e => {
+        if (!isDragging) return;
+
+        const rect = graph.getBoundingClientRect();
+        let x = e.clientX - rect.left - offsetX;
+        let y = e.clientY - rect.top - offsetY;
+
+        x = Math.max(0, Math.min(rect.width - newDot.offsetWidth, x));
+        y = Math.max(0, Math.min(rect.height - newDot.offsetHeight, y));
+
+        const leftPercent = (x / rect.width * 100) + '%';
+        const topPercent = (y / rect.height * 100) + '%';
+
+        newDot.style.left = leftPercent;
+        newDot.style.top = topPercent;
+
+        // Save the new position to localStorage
+        localStorage.setItem(newDot.dataset.name, JSON.stringify({ left: leftPercent, top: topPercent }));
+      });
+
+      document.addEventListener('mouseup', () => {
+        isDragging = false;
+        newDot.style.cursor = 'grab';
+      });
+
+      artistInput.value = ''; // Clear input field after adding artist
+    });
+  </script>
+</body>
+</html>
